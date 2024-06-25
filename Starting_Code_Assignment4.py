@@ -69,13 +69,6 @@ while not warehouse.finished():
     warehouse.next(place_id)
 #endregion
 
-#Simulated annealing parameters
-initial_temperature = 1000
-cooling_rate = 0.995
-markov_chain_length = 100
-min_temp = 1
-current_temp = initial_temperature              
- 
 #region print
 print("Total costs: {} at time {}.".format(warehouse.total_costs, warehouse.t))
 print(np.sum(costs))
