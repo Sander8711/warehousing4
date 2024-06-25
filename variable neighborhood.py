@@ -77,4 +77,9 @@ utils.create_missing_directories_of_file(SOLUTION_FILE)
 with open(SOLUTION_FILE, 'w') as outfile:
     recorder.store_solution_to_json(solution, outfile)
 #endregion
-    
+
+'''
+Kiezen van destroy en repair doen op de manier van SOL, random generator cijfer laten kiezen die in een if else lijst overeenkomt. 
+Destroy haalt random een deel van de oplossing weg. Repair zet daar random een paar locaties terug voor in de plaats. 
+Deze lijst waarde bepalen, en vergelijken met de tot dan toe beste. als die beter is, deze als nieuwe maken. 
+'''
