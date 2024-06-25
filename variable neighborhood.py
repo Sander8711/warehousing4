@@ -68,38 +68,29 @@ while not warehouse.finished():
     x+=1
     warehouse.next(place_id)
 #endregion
+            
+Solution = constructinitalsolution
+currentbest = solution
+initialize_adaptive_strategy(weights, probabilities, degree of destruction)
 
-#Simulated annealing parameters
-initial_temperature = 1000
-cooling_rate = 0.995
-markov_chain_length = 100
-min_temp = 1
-current_temp = initial_temperature
+n = 0
+while n < iterations:
+    destroymethod = selectdestroymethod(adaptivestrategy, omega_min)
+    repairmethod = selectrepairmethod(adaptivestrategy, omega_plus(destroymethod))
+    newsolution = repairsolution(destroysolution(solution, destroymethod), repairmethod)
 
-while current_temp > min_temp:
+    if newsolution < solution:
+        if newsolution < currentbest:
+            currentbest = newsolution
+        solution = newsolution
+    else:
+        if acceptstrategy = True:
+            solution = newsolution
+    updateadaptivestrategy(weights, probabilities, degree of destruction)
+    updatesuccessrate(destroymethod, repairmethod)
+    n += 1
 
-    for i in range(markov_chain_length):
-
-        if neighborsolution < currentsolution:
-
-            if neighborsolution < bestsolutionsofar:
-                storebestsolution
-                bestsolutionsofar = neighborsolution
-            else:
-                currentsolution = neighborsolution
-        
-        else:
-            r = np.random()
-            if r < np.exp((currentsolution - neighborsolution) / current_temp):
-                currentsolution = neighborsolution
-            else:
-                restorebestsolution
-
-    current_temp = current_temp * cooling_rate                
-
-
-
-
+result = currentbest
  
 #region print
 print("Total costs: {} at time {}.".format(warehouse.total_costs, warehouse.t))
