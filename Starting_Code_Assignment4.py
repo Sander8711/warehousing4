@@ -74,32 +74,7 @@ initial_temperature = 1000
 cooling_rate = 0.995
 markov_chain_length = 100
 min_temp = 1
-current_temp = initial_temperature
-
-while current_temp > min_temp:
-
-    for i in range(markov_chain_length):
-
-        if neighborsolution < currentsolution:
-
-            if neighborsolution < bestsolutionsofar:
-                storebestsolution
-                bestsolutionsofar = neighborsolution
-            else:
-                currentsolution = neighborsolution
-        
-        else:
-            r = np.random()
-            if r < np.exp((currentsolution - neighborsolution) / current_temp):
-                currentsolution = neighborsolution
-            else:
-                restorebestsolution
-
-    current_temp = current_temp * cooling_rate                
-
-
-
-
+current_temp = initial_temperature              
  
 #region print
 print("Total costs: {} at time {}.".format(warehouse.total_costs, warehouse.t))
