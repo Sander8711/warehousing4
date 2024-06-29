@@ -5,6 +5,7 @@ import prp.utils as utils
 import json
 import numpy as np
 import prp.core.costs as costs_mod
+import random
 
 #region set directories
 LAYOUT_FILE = "data/10-layout.json"
@@ -35,13 +36,6 @@ warehouse = load_problem()
 
 #select solver
 solver = CheapestPlaceSolver(warehouse, costs_type=CostsType.DECISION)
-
-#Simulated annealing parameters
-initial_temperature = 1000
-cooling_rate = 0.995
-markov_chain_length = 100
-min_temp = 1
-current_temp = initial_temperature
 
 #initialize arrays
 iterations = 1000
@@ -76,6 +70,25 @@ while not warehouse.finished():
     warehouse.next(place_id)
 #endregion
 
+def generateneighborsolution(solution):
+    number1 = np.random(len(solution))
+    number2 = np.random(len(solution))
+    if number1 == number2:
+        number2 += 1
+    placeholder = solution[number1]
+    solution[number1] = solution[number2]
+    solution[number2] = placeholder
+    return newsolution
+
+'''
+#Simulated annealing parameters
+initial_temperature = 1000
+cooling_rate = 0.995
+markov_chain_length = 100
+min_temp = 1
+current_temp = initial_temperature
+
+#Simulated annealing algorithm
 while current_temp > min_temp:
 
     for i in range(markov_chain_length):
@@ -96,10 +109,9 @@ while current_temp > min_temp:
                 restorebestsolution
 
     current_temp = current_temp * cooling_rate                
-
-
-
-
+'''
+newsolution = generateneighborsolution(solution)
+print(newsolution)
  
 #region print
 print("Total costs: {} at time {}.".format(warehouse.total_costs, warehouse.t))
