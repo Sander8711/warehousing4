@@ -36,6 +36,7 @@ warehouse = load_problem()
 
 #select solver
 solver = CheapestPlaceSolver(warehouse, costs_type=CostsType.DECISION)
+solver2 = RandomSolver(warehouse)
 
 #initialize arrays
 iterations = 1000
@@ -71,14 +72,42 @@ while not warehouse.finished():
 #endregion
 
 def generateneighborsolution(solution):
-    number1 = np.random(len(solution))
-    number2 = np.random(len(solution))
-    if number1 == number2:
-        number2 += 1
-    placeholder = solution[number1]
-    solution[number1] = solution[number2]
-    solution[number2] = placeholder
-    return newsolution
+    warehouse2 = warehouse
+    randomindex = np.random.randint(len(solution))
+    newsolution = solution[:randomindex]
+    firstpass = True
+
+    x = randomindex 
+    while len(newsolution) <= iterations - 1:
+        if firstpass == True:
+            place_id,pod,station_id = solver2.decide_new_place()
+            newsolution.append(place_id)
+            #can only store costs if a movement is made
+            if place_id != 0 and previous_location != 0:
+                costs[x]= warehouse2.costs.from_station(station_id, place_id)+ warehouse2.costs.to_station(previous_location, station_id)
+
+            #cannot store configurations in the last iteration
+            if x != iterations-1:
+                Original_Configuration[x+1]=Next_Configuration[x]
+            x+=1
+            warehouse2.next(place_id)
+            firstpass = False
+        else:
+            place_id,pod,station_id = solver.decide_new_place()
+            print(place_id, pod, station_id)
+            newsolution.append(place_id)
+
+            #can only store costs if a movement is made
+            if place_id != 0 and previous_location != 0:
+                costs[x]= warehouse2.costs.from_station(station_id, place_id)+ warehouse2.costs.to_station(previous_location, station_id)
+
+            #cannot store configurations in the last iteration
+            if x != iterations-1:
+                Original_Configuration[x+1]=Next_Configuration[x]
+            x+=1
+            warehouse2.next(place_id)
+
+    return solution
 
 '''
 #Simulated annealing parameters
@@ -111,6 +140,7 @@ while current_temp > min_temp:
     current_temp = current_temp * cooling_rate                
 '''
 newsolution = generateneighborsolution(solution)
+print(solution)
 print(newsolution)
  
 #region print
