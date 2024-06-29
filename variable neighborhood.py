@@ -69,6 +69,70 @@ while not warehouse.finished():
     warehouse.next(place_id)
 #endregion
 
+def selectdestroymethod():
+    print('placeholder')
+
+def selectrepairmethod():
+    print('placeholder')
+
+def generatesolution():
+    print('placeholder')
+
+def evaluatesolution(solution):
+    tocost = sum(solution)
+    fromcost = 0
+    data = json.load(DEPARTURES_FILE)
+    for sublist in data:
+        fromcost += sublist[0]
+    totalcost = tocost + fromcost
+    return totalcost
+
+def acceptstrategy():
+    print('placeholder')
+
+def updateadaptivestrategy():
+    print('placeholder')
+
+def updatesuccesrate():
+    print('placeholder')
+
+#Adaptive large neighborhood initialization
+stopcondition = 1000
+n = 1
+solutionvalue = evaluatesolution(solution)
+currentbest = solution
+currentbestvalue = solutionvalue
+
+#Adaptive large neighborhood algorithm
+while n < stopcondition:
+    #Choose destroy method
+    selectdestroymethod()
+    #Choose repair method
+    selectrepairmethod()
+    #Generate new solution
+    newsolution = generatesolution()
+    newsolutionvalue = evaluatesolution(newsolution)
+
+    if newsolutionvalue < solutionvalue:
+        if newsolutionvalue < currentbestvalue:
+            currentbest = newsolution
+            currentbestvalue = newsolutionvalue
+        solution = newsolution
+        solutionvalue = newsolutionvalue
+    else:
+        if acceptstrategy == True:
+            solution = newsolution
+            solutionvalue = newsolutionvalue
+    
+    #Update adaptive strategy(weights, probabilities, degree of destruction)
+    updateadaptivestrategy
+    #Updatesuccesrate(destroymethod, repairmethod)
+    updatesuccesrate
+    n += 1
+
+result = currentbest
+
+ 
 #region print
 print("Total costs: {} at time {}.".format(warehouse.total_costs, warehouse.t))
 print(np.sum(costs))
@@ -78,8 +142,3 @@ with open(SOLUTION_FILE, 'w') as outfile:
     recorder.store_solution_to_json(solution, outfile)
 #endregion
 
-'''
-Kiezen van destroy en repair doen op de manier van SOL, random generator cijfer laten kiezen die in een if else lijst overeenkomt. 
-Destroy haalt random een deel van de oplossing weg. Repair zet daar random een paar locaties terug voor in de plaats. 
-Deze lijst waarde bepalen, en vergelijken met de tot dan toe beste. als die beter is, deze als nieuwe maken. 
-'''
