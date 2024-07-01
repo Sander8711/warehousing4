@@ -6,6 +6,9 @@ import json
 import numpy as np
 import prp.core.costs as costs_mod
 import random
+from tqdm import tqdm
+
+pbar = tqdm(total=100)
 
 # region set directories
 LAYOUT_FILE = "data/10-layout.json"
@@ -75,6 +78,7 @@ def generate_neighbor_solution(solution):
     randomindex = np.random.randint(len(solution))
     newsolution = solution[:randomindex]
     firstpass = True
+    newcosts = np.empty(iterations, dtype=int)
 
     x = randomindex 
     while len(newsolution) <= iterations - 1:
@@ -87,19 +91,19 @@ def generate_neighbor_solution(solution):
         newsolution.append(place_id)
         # Can only store costs if a movement is made
         if place_id != 0 and previous_location != 0:
-            costs[x] = warehouse2.costs.from_station(station_id, place_id) + warehouse2.costs.to_station(previous_location, station_id)
+            newcosts[x] = warehouse2.costs.from_station(station_id, place_id) + warehouse2.costs.to_station(previous_location, station_id)
 
         # Cannot store configurations in the last iteration
         if x != iterations - 1:
             Original_Configuration[x + 1] = Next_Configuration[x]
         x += 1
         warehouse2.next(place_id)
-
-    return newsolution
+    newcostssom = np.sum(newcosts)
+    return newsolution, newcostssom
 
 # Simulated annealing parameters
-initial_temperature = 100
-cooling_rate = 0.99
+initial_temperature = 1000
+cooling_rate = 0.95
 markov_chain_length = 100
 min_temp = 1
 current_temp = initial_temperature
@@ -112,8 +116,7 @@ current_cost = best_cost
 
 while current_temp > min_temp:
     for i in range(markov_chain_length):
-        neighbor_solution = generate_neighbor_solution(current_solution)
-        neighbor_cost = np.sum(costs)
+        neighbor_solution, neighbor_cost = generate_neighbor_solution(current_solution)
         
         if neighbor_cost < current_cost:
             current_solution = neighbor_solution
@@ -121,6 +124,7 @@ while current_temp > min_temp:
             if neighbor_cost < best_cost:
                 best_solution = neighbor_solution
                 best_cost = neighbor_cost
+
         else:
             r = np.random.random()
             if r < np.exp((current_cost - neighbor_cost) / current_temp):
@@ -128,6 +132,8 @@ while current_temp > min_temp:
                 current_cost = neighbor_cost
 
     current_temp = current_temp * cooling_rate
+    pbar.update(100 * (initial_temperature - current_temp) / initial_temperature)
+
 
 # Print results
 print("Initial solution:", solution)
@@ -139,3 +145,5 @@ print("Optimized total cost:", best_cost)
 utils.create_missing_directories_of_file(SOLUTION_FILE)
 with open(SOLUTION_FILE, 'w') as outfile:
     recorder.store_solution_to_json(best_solution, outfile)
+
+pbar.close()    
