@@ -98,8 +98,8 @@ def generate_neighbor_solution(solution):
     return newsolution
 
 # Simulated annealing parameters
-initial_temperature = 1000
-cooling_rate = 0.995
+initial_temperature = 100
+cooling_rate = 0.99
 markov_chain_length = 100
 min_temp = 1
 current_temp = initial_temperature
