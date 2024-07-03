@@ -170,6 +170,7 @@ class MMapping(dict):
         return ret
 
 
+
 class Warehouse:
     """Mathematical model of a warehouse.
 
@@ -572,3 +573,4 @@ class Warehouse:
         :return False: otherwise
         """
         return self.place_to_pod[place_id] == INVALID_ID
+
