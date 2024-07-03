@@ -1,17 +1,20 @@
-from prp.solvers.simple import CheapestPlaceSolver, CostsType, RandomSolver
+import numpy as np
+import random
+import math
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+from prp.solvers.simple import CheapestPlaceSolver, SomePlaceSolver, CostsType, RandomSolver
 import prp.recorder as recorder
 import prp.xy as xy
 import prp.utils as utils
 import json
-import numpy as np
 import prp.core.costs as costs_mod
-import random
+from prp.core.objects import INVALID_ID  # Import INVALID_ID from prp.core.objects
 
-#region set directories
+# Set directories
 LAYOUT_FILE = "data/10-layout.json"
 INITIAL_STATE_FILE = "data/10-initial-state.json"
 DEPARTURES_FILE = "data/10-departures.json"
-
 SOLUTION_FILE = "data/solutions/10-cheapest-place-solution.json"
 
 def load_problem():
@@ -21,7 +24,6 @@ def load_problem():
         layout.load_from_json(infile)
         warehouse = layout.get_empty_warehouse()
         costs = layout.get_costs()
-        print(costs)
         warehouse.set_costs(costs)
     with open(INITIAL_STATE_FILE, 'r') as infile:
         recorder.load_initial_state_from_json(infile, warehouse)
@@ -30,125 +32,120 @@ def load_problem():
         warehouse.set_departure_generator(departures)
     return warehouse
 
-#initial solution
+# Load warehouse and initialize solvers
 warehouse = load_problem()
-#endregion
+solver_initial = SomePlaceSolver(warehouse)
+solver_improvement = CheapestPlaceSolver(warehouse, costs_type=CostsType.DECISION)
 
-#select solver
-solver = CheapestPlaceSolver(warehouse, costs_type=CostsType.DECISION)
-solver2 = RandomSolver(warehouse)
+# Initialize tqdm for progress bar
+pbar = tqdm(total=100)
 
-#initialize arrays
+# Initialize arrays for initial solution
 iterations = 1000
-x=0
+x = 0
 solution = []
-costs = np.empty(iterations,dtype=int)
-pod_location=[1,2,3,4,5,6,7,8,9,10]
-Original_Configuration=np.empty((iterations,10),dtype=int)
-Next_Configuration = np.empty((iterations,10),dtype=int)
-Original_Configuration[x] = [1,2,3,4,5,6,7,8,9,10]
+costs = np.empty(iterations, dtype=int)
+pod_location = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+Original_Configuration = np.empty((iterations, 10), dtype=int)
+Next_Configuration = np.empty((iterations, 10), dtype=int)
+Original_Configuration[x] = pod_location.copy()  # Initial configuration is the starting pod locations
 
-#region initial solution with cheapest place    
-while not warehouse.finished():
-    place_id,pod,station_id = solver.decide_new_place()
+# Generate initial solution using SomePlaceSolver
+while not warehouse.finished() and x < iterations:
+    place_id, pod, station_id = solver_initial.decide_new_place()
     solution.append(place_id)
     
-   #store movements in arrays in order to use in heuristic
-    previous_location=pod_location[pod-1]
-    Next_Configuration[x]=Original_Configuration[x]
-    Next_Configuration[x][previous_location-1]=0
-    Next_Configuration[x][place_id-1]=pod
-    pod_location[pod-1]=place_id
+    # Store movements in arrays for heuristic use
+    previous_location = pod_location[pod - 1]
+    Next_Configuration[x] = Original_Configuration[x].copy()
+    Next_Configuration[x][previous_location - 1] = 0
+    Next_Configuration[x][place_id - 1] = pod
+    pod_location[pod - 1] = place_id
     
-    #can only store costs if a movement is made
+    # Store costs if a movement is made
     if place_id != 0 and previous_location != 0:
-        costs[x]= warehouse.costs.from_station(station_id, place_id)+ warehouse.costs.to_station(previous_location, station_id)
+        costs[x] = warehouse.costs.from_station(station_id, place_id) + warehouse.costs.to_station(previous_location, station_id)
    
-    #cannot store configurations in the last iteration
-    if x != iterations-1:
-        Original_Configuration[x+1]=Next_Configuration[x]
-    x+=1
+    # Update configuration for next iteration
+    if x != iterations - 1:
+        Original_Configuration[x + 1] = Next_Configuration[x]
+    x += 1
     warehouse.next(place_id)
-#endregion
 
-def generateneighborsolution(solution):
-    warehouse2 = warehouse
+def generate_neighbor_solution(solution, warehouse, solver_improvement):
+    """Generate a neighbor solution by using CheapestPlaceSolver for improvement."""
+    warehouse2 = warehouse.copy()  # Create a copy of the warehouse
     randomindex = np.random.randint(len(solution))
     newsolution = solution[:randomindex]
     firstpass = True
+    newcosts = np.empty(len(solution), dtype=int)
+    previous_location = INVALID_ID  # Initialize previous_location
 
     x = randomindex 
-    while len(newsolution) <= iterations - 1:
-        if firstpass == True:
-            place_id,pod,station_id = solver2.decide_new_place()
-            newsolution.append(place_id)
-            #can only store costs if a movement is made
-            if place_id != 0 and previous_location != 0:
-                costs[x]= warehouse2.costs.from_station(station_id, place_id)+ warehouse2.costs.to_station(previous_location, station_id)
-
-            #cannot store configurations in the last iteration
-            if x != iterations-1:
-                Original_Configuration[x+1]=Next_Configuration[x]
-            x+=1
-            warehouse2.next(place_id)
+    while len(newsolution) <= len(solution) - 1:
+        if firstpass:
+            place_id, pod, station_id = solver_improvement.decide_new_place()
             firstpass = False
         else:
-            place_id,pod,station_id = solver.decide_new_place()
-            print(place_id, pod, station_id)
-            newsolution.append(place_id)
+            place_id, pod, station_id = solver_initial.decide_new_place()
 
-            #can only store costs if a movement is made
-            if place_id != 0 and previous_location != 0:
-                costs[x]= warehouse2.costs.from_station(station_id, place_id)+ warehouse2.costs.to_station(previous_location, station_id)
+        newsolution.append(place_id)
+        # Can only store costs if a movement is made
+        if place_id != INVALID_ID and previous_location != INVALID_ID:
+            newcosts[x] = warehouse2.costs.from_station(station_id, place_id) + warehouse2.costs.to_station(previous_location, station_id)
 
-            #cannot store configurations in the last iteration
-            if x != iterations-1:
-                Original_Configuration[x+1]=Next_Configuration[x]
-            x+=1
-            warehouse2.next(place_id)
+        # Cannot store configurations in the last iteration
+        if x != len(solution) - 1:
+            Original_Configuration[x + 1] = Next_Configuration[x]
+        x += 1
+        warehouse2.next(place_id)
+    
+    newcostssom = np.sum(newcosts)
+    return newsolution, newcostssom
 
-    return solution
-
-'''
-#Simulated annealing parameters
+# Simulated annealing parameters
 initial_temperature = 1000
-cooling_rate = 0.995
+cooling_rate = 0.95
 markov_chain_length = 100
 min_temp = 1
 current_temp = initial_temperature
 
-#Simulated annealing algorithm
+# Simulated annealing algorithm
+best_solution = solution.copy()
+best_cost = np.sum(costs)
+current_solution = solution.copy()
+current_cost = best_cost
+
 while current_temp > min_temp:
-
     for i in range(markov_chain_length):
-
-        if neighborsolution < currentsolution:
-
-            if neighborsolution < bestsolutionsofar:
-                storebestsolution
-                bestsolutionsofar = neighborsolution
-            else:
-                currentsolution = neighborsolution
+        neighbor_solution, neighbor_cost = generate_neighbor_solution(current_solution, warehouse, solver_improvement)
         
-        else:
-            r = np.random()
-            if r < np.exp((currentsolution - neighborsolution) / current_temp):
-                currentsolution = neighborsolution
-            else:
-                restorebestsolution
+        if neighbor_cost < current_cost:
+            current_solution = neighbor_solution
+            current_cost = neighbor_cost
+            if neighbor_cost < best_cost:
+                best_solution = neighbor_solution
+                best_cost = neighbor_cost
 
-    current_temp = current_temp * cooling_rate                
-'''
-newsolution = generateneighborsolution(solution)
-print(solution)
-print(newsolution)
- 
-#region print
-print("Total costs: {} at time {}.".format(warehouse.total_costs, warehouse.t))
-print(np.sum(costs))
+        else:
+            r = np.random.random()
+            if r < np.exp((current_cost - neighbor_cost) / current_temp):
+                current_solution = neighbor_solution
+                current_cost = neighbor_cost
+
+    current_temp = current_temp * cooling_rate
+
+
+# Print results
+print("Initial solution:", solution)
+print("Optimized solution:", best_solution)
+print("Initial total cost:", np.sum(costs))
+print("Optimized total cost:", best_cost)
+
 # Save solution to a JSON file.
 utils.create_missing_directories_of_file(SOLUTION_FILE)
 with open(SOLUTION_FILE, 'w') as outfile:
-    recorder.store_solution_to_json(solution, outfile)
-#endregion
-    
+    recorder.store_solution_to_json(best_solution, outfile)
+
+pbar.close()
+
