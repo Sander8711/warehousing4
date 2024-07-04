@@ -44,7 +44,10 @@ def generate_neighbor_solution(solution, warehouse, solver_improvement):
         place_id = solution[i]
         for pod_id in warehouse.pods:
             if warehouse.place_by_pod(pod_id) == place_id:
-                warehouse2.assign_pod_to_place(pod_id, place_id)
+                try:
+                    warehouse2.assign_pod_to_place(pod_id, place_id)
+                except PlaceNotEmpty:
+                    print(f"[ERROR] place {place_id} is not empty in the new warehouse instance.")
                 break
     
     firstpass = True
